@@ -1,11 +1,70 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useWindowsData } from '../hooks/useWindowsData';
 import { WindowGroup } from '../components/WindowGroup';
 
+const STORAGE_KEY = 'chrome-winmgr-layout-mode';
+const OLD_STORAGE_KEY = 'chrome-winmgr-column-count';
+
 export const WindowManagerApp: React.FC = () => {
     const { windows, loading, error, refreshData } = useWindowsData();
-    const [columnCount, setColumnCount] = useState<number>(0); // 0 = auto/responsive
+
+    // Layout modes: compact/medium/large for size-based, or 1-6 for fixed columns
+    const [layoutMode, setLayoutMode] = useState<string>(() => {
+        try {
+            // Check for new layout mode first
+            let saved = localStorage.getItem(STORAGE_KEY);
+
+            if (!saved) {
+                // Try to migrate from old column count system
+                const oldSaved = localStorage.getItem(OLD_STORAGE_KEY);
+                if (oldSaved) {
+                    const oldColumnCount = parseInt(oldSaved, 10);
+                    if (oldColumnCount === 0) {
+                        saved = 'medium'; // Auto mode becomes medium
+                    } else {
+                        saved = oldColumnCount.toString(); // Keep fixed column counts
+                    }
+
+                    // Save migrated value and remove old key
+                    localStorage.setItem(STORAGE_KEY, saved);
+                    localStorage.removeItem(OLD_STORAGE_KEY);
+                }
+            }
+
+            return saved || 'medium'; // Default to medium size
+        } catch {
+            return 'medium';
+        }
+    });
+
     const [searchText, setSearchText] = useState<string>('');
+
+    // Save layout mode to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, layoutMode);
+        } catch {
+            // Silently fail if localStorage is not available
+        }
+    }, [layoutMode]);
+
+    // Get CSS class and style based on layout mode
+    const getLayoutConfig = () => {
+        if (layoutMode === 'compact') {
+            return { className: 'masonry-container-compact', style: {} };
+        } else if (layoutMode === 'medium') {
+            return { className: 'masonry-container-medium', style: {} };
+        } else if (layoutMode === 'large') {
+            return { className: 'masonry-container-large', style: {} };
+        } else {
+            // Fixed column count (1-6)
+            const columnCount = parseInt(layoutMode, 10);
+            return {
+                className: 'masonry-container-custom',
+                style: { columnCount }
+            };
+        }
+    };
 
     // Filter windows and tabs based on search text
     const filteredWindows = useMemo(() => {
@@ -59,13 +118,7 @@ export const WindowManagerApp: React.FC = () => {
 
     const totalTabs = windows.reduce((sum, window) => sum + window.tabs.length, 0);
     const filteredTotalTabs = filteredWindows.reduce((sum, window) => sum + window.tabs.length, 0);
-
-    // Sort windows to put active/focused window first
-    const sortedWindows = [...filteredWindows].sort((a, b) => {
-        if (a.focused && !b.focused) return -1;
-        if (!a.focused && b.focused) return 1;
-        return 0;
-    });
+    const layoutConfig = getLayoutConfig();
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -130,23 +183,25 @@ export const WindowManagerApp: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Column Count Selector */}
+                        {/* Layout Mode Selector */}
                         <div className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
                             </svg>
                             <select
-                                value={columnCount}
-                                onChange={(e) => setColumnCount(Number(e.target.value))}
+                                value={layoutMode}
+                                onChange={(e) => setLayoutMode(e.target.value)}
                                 className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
-                                <option value={0}>Auto</option>
-                                <option value={1}>1 Column</option>
-                                <option value={2}>2 Columns</option>
-                                <option value={3}>3 Columns</option>
-                                <option value={4}>4 Columns</option>
-                                <option value={5}>5 Columns</option>
-                                <option value={6}>6 Columns</option>
+                                <option value="compact">Compact Cards</option>
+                                <option value="medium">Medium Cards</option>
+                                <option value="large">Large Cards</option>
+                                <option value="1">1 Column</option>
+                                <option value="2">2 Columns</option>
+                                <option value="3">3 Columns</option>
+                                <option value="4">4 Columns</option>
+                                <option value="5">5 Columns</option>
+                                <option value="6">6 Columns</option>
                             </select>
                         </div>
                     </div>
@@ -185,10 +240,10 @@ export const WindowManagerApp: React.FC = () => {
                     </div>
                 ) : (
                     <div
-                        className={columnCount === 0 ? "masonry-container" : "masonry-container-custom"}
-                        style={columnCount > 0 ? { columnCount } : {}}
+                        className={layoutConfig.className}
+                        style={layoutConfig.style}
                     >
-                        {sortedWindows.map((window) => (
+                        {filteredWindows.map((window) => (
                             <div key={window.id} className="masonry-item">
                                 <WindowGroup
                                     window={window}

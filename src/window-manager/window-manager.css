@@ -15,44 +15,118 @@
 
 @layer components {
 
-    /* Masonry/Waterfall Layout - Responsive */
-    .masonry-container {
+    /* Masonry/Waterfall Layout - Compact Cards (~200-250px) */
+    .masonry-container-compact {
+        column-count: 1;
+        column-gap: 1rem;
+        column-fill: balance;
+    }
+
+    @media (min-width: 480px) {
+        .masonry-container-compact {
+            column-count: 2;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .masonry-container-compact {
+            column-count: 3;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .masonry-container-compact {
+            column-count: 4;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .masonry-container-compact {
+            column-count: 5;
+        }
+    }
+
+    @media (min-width: 1536px) {
+        .masonry-container-compact {
+            column-count: 6;
+        }
+    }
+
+    @media (min-width: 1920px) {
+        .masonry-container-compact {
+            column-count: 7;
+        }
+    }
+
+    /* Masonry/Waterfall Layout - Medium Cards (~300-350px) */
+    .masonry-container-medium {
         column-count: 1;
         column-gap: 1rem;
         column-fill: balance;
     }
 
     @media (min-width: 640px) {
-        .masonry-container {
+        .masonry-container-medium {
             column-count: 2;
         }
     }
 
     @media (min-width: 1024px) {
-        .masonry-container {
+        .masonry-container-medium {
             column-count: 3;
         }
     }
 
     @media (min-width: 1280px) {
-        .masonry-container {
+        .masonry-container-medium {
             column-count: 4;
         }
     }
 
     @media (min-width: 1536px) {
-        .masonry-container {
+        .masonry-container-medium {
             column-count: 5;
         }
     }
 
     @media (min-width: 1920px) {
-        .masonry-container {
+        .masonry-container-medium {
             column-count: 6;
         }
     }
 
-    /* Masonry/Waterfall Layout - Custom (User Controlled) */
+    /* Masonry/Waterfall Layout - Large Cards (~400-500px) */
+    .masonry-container-large {
+        column-count: 1;
+        column-gap: 1rem;
+        column-fill: balance;
+    }
+
+    @media (min-width: 768px) {
+        .masonry-container-large {
+            column-count: 2;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .masonry-container-large {
+            column-count: 3;
+        }
+    }
+
+    @media (min-width: 1920px) {
+        .masonry-container-large {
+            column-count: 4;
+        }
+    }
+
+    @media (min-width: 2560px) {
+        .masonry-container-large {
+            column-count: 5;
+        }
+    }
+
+    /* Masonry/Waterfall Layout - Custom (User Controlled Columns) */
     .masonry-container-custom {
         column-gap: 1rem;
         column-fill: balance;
@@ -67,8 +141,6 @@
         margin-bottom: 1rem;
     }
 
-    /* Removed active-window-container - now using normal grid */
-
     /* Window card enhancements */
     .window-card {
         background: #ffffff;
@@ -76,7 +148,7 @@
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         width: 100%;
         display: block;
-        transition: border-color 0.15s ease;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
     }
 
     .window-card:hover {
@@ -86,7 +158,8 @@
     .window-card.active {
         background: #f0f9ff;
         border-color: #60a5fa;
-        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+        /* Same shadow size as normal cards - only color changes */
+        box-shadow: 0 1px 3px 0 rgba(59, 130, 246, 0.2), 0 1px 2px 0 rgba(59, 130, 246, 0.12);
     }
 
     .window-card.focused {

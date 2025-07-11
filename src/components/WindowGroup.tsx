@@ -97,12 +97,6 @@ export const WindowGroup: React.FC<WindowGroupProps> = ({ window, onTabChange, i
                                     <span className="text-orange-600 font-medium">Minimized</span>
                                 </>
                             )}
-                            {isActive && (
-                                <>
-                                    <span>•</span>
-                                    <span className="text-blue-600 font-medium">Active</span>
-                                </>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -130,7 +124,7 @@ export const WindowGroup: React.FC<WindowGroupProps> = ({ window, onTabChange, i
                                 key={tab.id}
                                 tab={tab}
                                 onTabChange={onTabChange}
-                                compact={!isActive}
+                                compact={true}
                                 searchText={searchText}
                             />
                         ))}

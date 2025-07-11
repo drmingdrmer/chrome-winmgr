@@ -97,7 +97,7 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
                 </div>
 
                 <div className="flex-1 min-w-0 flex items-center gap-1">
-                    <div className={`text-xs truncate ${tab.active ? 'font-semibold text-blue-700' : 'font-medium text-gray-700'}`}>
+                    <div className={`text-sm truncate ${tab.active ? 'font-semibold text-blue-700' : 'font-medium text-gray-700'}`}>
                         {highlightText(tab.title, searchText)}
                     </div>
                     {tab.pinned && (
