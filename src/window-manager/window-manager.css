@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: #f8fafc;
+    }
+}
+
+@layer components {
+
+    /* Masonry/Waterfall Layout - Responsive */
+    .masonry-container {
+        column-count: 1;
+        column-gap: 1rem;
+        column-fill: balance;
+    }
+
+    @media (min-width: 640px) {
+        .masonry-container {
+            column-count: 2;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .masonry-container {
+            column-count: 3;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .masonry-container {
+            column-count: 4;
+        }
+    }
+
+    @media (min-width: 1536px) {
+        .masonry-container {
+            column-count: 5;
+        }
+    }
+
+    @media (min-width: 1920px) {
+        .masonry-container {
+            column-count: 6;
+        }
+    }
+
+    /* Masonry/Waterfall Layout - Custom (User Controlled) */
+    .masonry-container-custom {
+        column-gap: 1rem;
+        column-fill: balance;
+        /* column-count set via inline style */
+    }
+
+    .masonry-item {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        display: inline-block;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    /* Removed active-window-container - now using normal grid */
+
+    /* Window card enhancements */
+    .window-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        width: 100%;
+        display: block;
+        transition: border-color 0.15s ease;
+    }
+
+    .window-card:hover {
+        border-color: #cbd5e1;
+    }
+
+    .window-card.active {
+        background: #f0f9ff;
+        border-color: #60a5fa;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+    }
+
+    .window-card.focused {
+        border-color: #93c5fd;
+        background: #f8fafc;
+    }
+
+    .window-card.minimized {
+        opacity: 0.75;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+    }
+
+    /* Tab item enhancements */
+    .tab-item {
+        border-radius: 6px;
+        transition: background-color 0.15s ease;
+    }
+
+    .tab-item:hover {
+        background: #f8fafc;
+    }
+
+    .tab-item.active {
+        background: #eff6ff;
+        border-left: 3px solid #3b82f6;
+    }
+
+    .tab-item.compact {
+        border-radius: 4px;
+    }
+
+    .tab-item.compact.active {
+        border-left: 2px solid #3b82f6;
+    }
+
+    /* Header enhancements */
+    .header-gradient {
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* Icon animations - simplified */
+    .icon-animate {
+        transition: opacity 0.15s ease;
+    }
+
+    .icon-animate:hover {
+        opacity: 0.8;
+    }
+
+    /* Button enhancements */
+    .btn-primary {
+        background: #3b82f6;
+        transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+    }
+
+    /* Status badges */
+    .status-badge {
+        font-weight: 600;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+    }
+
+    .status-badge.green {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #22c55e;
+    }
+
+    .status-badge.yellow {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #f59e0b;
+    }
+
+    .status-badge.red {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #ef4444;
+    }
+}
