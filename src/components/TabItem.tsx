@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ChromeTab } from '../types';
 import { switchToTab, closeTab } from '../utils/chrome-api';
 
@@ -9,7 +9,7 @@ interface TabItemProps {
     searchText?: string;
 }
 
-// Utility function to highlight search text
+// Utility function to highlight search text - memoized
 const highlightText = (text: string, searchText: string) => {
     if (!searchText || !text) return text;
 
@@ -28,17 +28,18 @@ const highlightText = (text: string, searchText: string) => {
     });
 };
 
-export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = false, searchText = '' }) => {
-    const handleTabClick = async () => {
+export const TabItem: React.FC<TabItemProps> = React.memo(({ tab, onTabChange, compact = false, searchText = '' }) => {
+    // Memoize event handlers to prevent unnecessary re-renders
+    const handleTabClick = useCallback(async () => {
         try {
             await switchToTab(tab.id);
             onTabChange?.();
         } catch (error) {
             console.error('Failed to switch to tab:', error);
         }
-    };
+    }, [tab.id, onTabChange]);
 
-    const handleCloseTab = async (e: React.MouseEvent) => {
+    const handleCloseTab = useCallback(async (e: React.MouseEvent) => {
         e.stopPropagation();
         try {
             await closeTab(tab.id);
@@ -46,9 +47,10 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
         } catch (error) {
             console.error('Failed to close tab:', error);
         }
-    };
+    }, [tab.id, onTabChange]);
 
-    const getFaviconUrl = () => {
+    // Memoize expensive calculations
+    const faviconUrl = useMemo(() => {
         if (tab.favIconUrl) {
             return tab.favIconUrl;
         }
@@ -58,47 +60,61 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
             return `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
         }
         return null;
-    };
+    }, [tab.favIconUrl, tab.url]);
 
-    const getDomainFromUrl = (url: string) => {
+    const domainFromUrl = useMemo(() => {
         try {
-            return new URL(url).hostname.replace('www.', '');
+            return new URL(tab.url).hostname.replace('www.', '');
         } catch {
-            return url.length > 30 ? url.substring(0, 30) + '...' : url;
+            return tab.url.length > 30 ? tab.url.substring(0, 30) + '...' : tab.url;
         }
-    };
+    }, [tab.url]);
 
-    const getTabItemClasses = () => {
+    const tabItemClasses = useMemo(() => {
         let classes = 'tab-item cursor-pointer group';
         if (compact) classes += ' compact';
         if (tab.active) classes += ' active';
         return classes;
-    };
+    }, [compact, tab.active]);
+
+    // Memoize highlighted text to avoid regex processing on every render
+    const highlightedTitle = useMemo(() => {
+        return highlightText(tab.title, searchText);
+    }, [tab.title, searchText]);
+
+    const highlightedDomain = useMemo(() => {
+        return highlightText(domainFromUrl, searchText);
+    }, [domainFromUrl, searchText]);
+
+    const faviconElement = useMemo(() => {
+        if (faviconUrl) {
+            return (
+                <img
+                    src={faviconUrl}
+                    alt=""
+                    className={compact ? "w-3 h-3" : "w-4 h-4"}
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                    }}
+                />
+            );
+        }
+        return <div className={`bg-gray-300 rounded-sm ${compact ? "w-3 h-3" : "w-4 h-4"}`}></div>;
+    }, [faviconUrl, compact]);
 
     if (compact) {
         return (
             <div
-                className={`${getTabItemClasses()} flex items-center gap-2 p-1.5`}
+                className={`${tabItemClasses} flex items-center gap-2 p-1.5`}
                 onClick={handleTabClick}
             >
                 <div className="flex-shrink-0 w-3 h-3">
-                    {getFaviconUrl() ? (
-                        <img
-                            src={getFaviconUrl()!}
-                            alt=""
-                            className="w-3 h-3"
-                            onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                            }}
-                        />
-                    ) : (
-                        <div className="w-3 h-3 bg-gray-300 rounded-sm"></div>
-                    )}
+                    {faviconElement}
                 </div>
 
                 <div className="flex-1 min-w-0 flex items-center gap-1">
                     <div className={`text-sm truncate ${tab.active ? 'font-semibold text-blue-700' : 'font-medium text-gray-700'}`}>
-                        {highlightText(tab.title, searchText)}
+                        {highlightedTitle}
                     </div>
                     {tab.pinned && (
                         <svg className="w-2.5 h-2.5 text-orange-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -110,7 +126,7 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
 
                 <button
                     onClick={handleCloseTab}
-                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-opacity"
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded"
                     title="Close tab"
                 >
                     <svg className="w-2.5 h-2.5 text-gray-400 hover:text-red-500" fill="currentColor" viewBox="0 0 20 20">
@@ -123,28 +139,17 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
 
     return (
         <div
-            className={`${getTabItemClasses()} flex items-center gap-3 p-3`}
+            className={`${tabItemClasses} flex items-center gap-3 p-3`}
             onClick={handleTabClick}
         >
             <div className="flex-shrink-0 w-4 h-4">
-                {getFaviconUrl() ? (
-                    <img
-                        src={getFaviconUrl()!}
-                        alt=""
-                        className="w-4 h-4"
-                        onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                        }}
-                    />
-                ) : (
-                    <div className="w-4 h-4 bg-gray-300 rounded-sm"></div>
-                )}
+                {faviconElement}
             </div>
 
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                     <div className={`text-sm truncate flex-1 ${tab.active ? 'font-bold text-blue-700' : 'font-semibold text-gray-900'}`}>
-                        {highlightText(tab.title, searchText)}
+                        {highlightedTitle}
                     </div>
                     {tab.pinned && (
                         <div className="flex-shrink-0">
@@ -156,13 +161,13 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
                     )}
                 </div>
                 <div className="text-xs text-gray-500 truncate font-medium">
-                    {highlightText(getDomainFromUrl(tab.url), searchText)}
+                    {highlightedDomain}
                 </div>
             </div>
 
             <button
                 onClick={handleCloseTab}
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 rounded transition-opacity"
+                className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 rounded"
                 title="Close tab"
             >
                 <svg className="w-3 h-3 text-gray-400 hover:text-red-500" fill="currentColor" viewBox="0 0 20 20">
@@ -171,4 +176,4 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, onTabChange, compact = fa
             </button>
         </div>
     );
-}; 
+}); 

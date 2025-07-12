@@ -7,8 +7,6 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
         background: #f8fafc;
     }
 }
@@ -20,6 +18,9 @@
         column-count: 1;
         column-gap: 1rem;
         column-fill: balance;
+        contain: layout style;
+        transform: translateZ(0);
+        /* Force hardware acceleration */
     }
 
     @media (min-width: 480px) {
@@ -63,6 +64,9 @@
         column-count: 1;
         column-gap: 1rem;
         column-fill: balance;
+        contain: layout style;
+        transform: translateZ(0);
+        /* Force hardware acceleration */
     }
 
     @media (min-width: 640px) {
@@ -100,6 +104,9 @@
         column-count: 1;
         column-gap: 1rem;
         column-fill: balance;
+        contain: layout style;
+        transform: translateZ(0);
+        /* Force hardware acceleration */
     }
 
     @media (min-width: 768px) {
@@ -130,6 +137,9 @@
     .masonry-container-custom {
         column-gap: 1rem;
         column-fill: balance;
+        contain: layout style;
+        transform: translateZ(0);
+        /* Force hardware acceleration */
         /* column-count set via inline style */
     }
 
@@ -139,6 +149,10 @@
         display: inline-block;
         width: 100%;
         margin-bottom: 1rem;
+        contain: layout style paint;
+        will-change: transform;
+        transform: translateZ(0);
+        /* Force hardware acceleration for each card */
     }
 
     /* Window card enhancements */
@@ -147,7 +161,10 @@
         border: 1px solid #e2e8f0;
         width: 100%;
         display: block;
-        transition: border-color 0.15s ease, background-color 0.15s ease;
+        contain: layout style paint;
+        will-change: background-color, border-color;
+        backface-visibility: hidden;
+        /* Optimize for animations */
     }
 
     .window-card:hover {
@@ -173,7 +190,9 @@
     /* Tab item enhancements */
     .tab-item {
         border-radius: 6px;
-        transition: background-color 0.15s ease;
+        contain: layout style paint;
+        will-change: background-color;
+        backface-visibility: hidden;
     }
 
     .tab-item:hover {
@@ -200,9 +219,7 @@
     }
 
     /* Icon animations - simplified */
-    .icon-animate {
-        transition: opacity 0.15s ease;
-    }
+    .icon-animate {}
 
     .icon-animate:hover {
         opacity: 0.8;
@@ -211,7 +228,6 @@
     /* Button enhancements */
     .btn-primary {
         background: #3b82f6;
-        transition: background-color 0.15s ease;
     }
 
     .btn-primary:hover {
@@ -224,6 +240,7 @@
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;
         border-radius: 9999px;
+        contain: layout style paint;
     }
 
     .status-badge.green {
@@ -242,5 +259,18 @@
         background: #fee2e2;
         color: #991b1b;
         border: 1px solid #ef4444;
+    }
+
+    /* Performance optimizations for scrolling */
+    * {
+        -webkit-overflow-scrolling: touch;
+        /* Smooth scrolling on iOS */
+    }
+
+    /* Optimize image rendering */
+    img {
+        image-rendering: auto;
+        image-rendering: crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
     }
 }

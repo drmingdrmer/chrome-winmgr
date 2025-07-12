@@ -45,7 +45,7 @@ export const PopupApp: React.FC = () => {
                 </div>
                 <button
                     onClick={refreshData}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-100 rounded-lg"
                     title="Refresh"
                 >
                     <svg className="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">

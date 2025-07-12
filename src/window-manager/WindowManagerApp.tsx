@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useWindowsData } from '../hooks/useWindowsData';
 import { WindowGroup } from '../components/WindowGroup';
 
@@ -38,6 +38,16 @@ export const WindowManagerApp: React.FC = () => {
     });
 
     const [searchText, setSearchText] = useState<string>('');
+    const [debouncedSearchText, setDebouncedSearchText] = useState<string>('');
+
+    // Debounce search text to reduce expensive filtering operations
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchText(searchText);
+        }, 150); // 150ms debounce
+
+        return () => clearTimeout(timer);
+    }, [searchText]);
 
     // Save layout mode to localStorage whenever it changes
     useEffect(() => {
@@ -48,8 +58,8 @@ export const WindowManagerApp: React.FC = () => {
         }
     }, [layoutMode]);
 
-    // Get CSS class and style based on layout mode
-    const getLayoutConfig = () => {
+    // Memoize layout configuration
+    const layoutConfig = useMemo(() => {
         if (layoutMode === 'compact') {
             return { className: 'masonry-container-compact', style: {} };
         } else if (layoutMode === 'medium') {
@@ -64,15 +74,15 @@ export const WindowManagerApp: React.FC = () => {
                 style: { columnCount }
             };
         }
-    };
+    }, [layoutMode]);
 
-    // Filter windows and tabs based on search text
+    // Filter windows and tabs based on debounced search text for better performance
     const filteredWindows = useMemo(() => {
-        if (!searchText.trim()) {
+        if (!debouncedSearchText.trim()) {
             return windows;
         }
 
-        const searchLower = searchText.toLowerCase();
+        const searchLower = debouncedSearchText.toLowerCase();
 
         return windows.map(window => {
             // Filter tabs that match the search
@@ -92,7 +102,31 @@ export const WindowManagerApp: React.FC = () => {
 
             return null;
         }).filter(Boolean) as typeof windows;
-    }, [windows, searchText]);
+    }, [windows, debouncedSearchText]);
+
+    // Memoize tab counts
+    const totalTabs = useMemo(() =>
+        windows.reduce((sum, window) => sum + window.tabs.length, 0),
+        [windows]
+    );
+
+    const filteredTotalTabs = useMemo(() =>
+        filteredWindows.reduce((sum, window) => sum + window.tabs.length, 0),
+        [filteredWindows]
+    );
+
+    // Memoize event handlers
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchText(e.target.value);
+    }, []);
+
+    const handleClearSearch = useCallback(() => {
+        setSearchText('');
+    }, []);
+
+    const handleLayoutModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+        setLayoutMode(e.target.value);
+    }, []);
 
     if (error) {
         return (
@@ -107,7 +141,7 @@ export const WindowManagerApp: React.FC = () => {
                     <p className="text-gray-600 mb-4">{error}</p>
                     <button
                         onClick={refreshData}
-                        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+                        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
                     >
                         Try Again
                     </button>
@@ -115,10 +149,6 @@ export const WindowManagerApp: React.FC = () => {
             </div>
         );
     }
-
-    const totalTabs = windows.reduce((sum, window) => sum + window.tabs.length, 0);
-    const filteredTotalTabs = filteredWindows.reduce((sum, window) => sum + window.tabs.length, 0);
-    const layoutConfig = getLayoutConfig();
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -134,8 +164,8 @@ export const WindowManagerApp: React.FC = () => {
                                         <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                                     </svg>
                                     <span className="font-medium text-gray-700">
-                                        {searchText ? filteredWindows.length : windows.length}
-                                        {searchText && filteredWindows.length !== windows.length && (
+                                        {debouncedSearchText ? filteredWindows.length : windows.length}
+                                        {debouncedSearchText && filteredWindows.length !== windows.length && (
                                             <span className="text-gray-400">/{windows.length}</span>
                                         )}
                                     </span>
@@ -147,8 +177,8 @@ export const WindowManagerApp: React.FC = () => {
                                         <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2.5 5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45.5a2.5 2.5 0 11-3.9-3 2.5 2.5 0 013.9 3z" clipRule="evenodd" />
                                     </svg>
                                     <span className="font-medium text-gray-700">
-                                        {searchText ? filteredTotalTabs : totalTabs}
-                                        {searchText && filteredTotalTabs !== totalTabs && (
+                                        {debouncedSearchText ? filteredTotalTabs : totalTabs}
+                                        {debouncedSearchText && filteredTotalTabs !== totalTabs && (
                                             <span className="text-gray-400">/{totalTabs}</span>
                                         )}
                                     </span>
@@ -167,12 +197,12 @@ export const WindowManagerApp: React.FC = () => {
                                     type="text"
                                     placeholder="Search tabs and windows..."
                                     value={searchText}
-                                    onChange={(e) => setSearchText(e.target.value)}
+                                    onChange={handleSearchChange}
                                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                                 {searchText && (
                                     <button
-                                        onClick={() => setSearchText('')}
+                                        onClick={handleClearSearch}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                     >
                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -190,7 +220,7 @@ export const WindowManagerApp: React.FC = () => {
                             </svg>
                             <select
                                 value={layoutMode}
-                                onChange={(e) => setLayoutMode(e.target.value)}
+                                onChange={handleLayoutModeChange}
                                 className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             >
                                 <option value="compact">Compact Cards</option>
@@ -212,18 +242,18 @@ export const WindowManagerApp: React.FC = () => {
             <main className="max-w-full mx-auto px-4 py-4">
                 {filteredWindows.length === 0 ? (
                     <div className="bg-white rounded-lg p-8 text-center max-w-md mx-auto">
-                        {searchText ? (
+                        {debouncedSearchText ? (
                             <>
                                 <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                                 <h2 className="text-xl font-semibold text-gray-900 mb-2">No Results Found</h2>
                                 <p className="text-gray-600 mb-4">
-                                    No tabs or windows match "<span className="font-medium">{searchText}</span>"
+                                    No tabs or windows match "<span className="font-medium">{debouncedSearchText}</span>"
                                 </p>
                                 <button
-                                    onClick={() => setSearchText('')}
-                                    className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+                                    onClick={handleClearSearch}
+                                    className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
                                 >
                                     Clear Search
                                 </button>
@@ -249,7 +279,7 @@ export const WindowManagerApp: React.FC = () => {
                                     window={window}
                                     onTabChange={refreshData}
                                     isActive={window.focused}
-                                    searchText={searchText}
+                                    searchText={debouncedSearchText}
                                 />
                             </div>
                         ))}
