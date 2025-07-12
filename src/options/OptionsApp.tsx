@@ -4,7 +4,7 @@ export const OptionsApp: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-2xl mx-auto px-4">
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white rounded-lg p-6">
                     <h1 className="text-2xl font-bold text-gray-800 mb-4">
                         Chrome Window Manager Settings
                     </h1>

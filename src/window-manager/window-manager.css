@@ -145,7 +145,6 @@
     .window-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         width: 100%;
         display: block;
         transition: border-color 0.15s ease, background-color 0.15s ease;
@@ -158,8 +157,6 @@
     .window-card.active {
         background: #f0f9ff;
         border-color: #60a5fa;
-        /* Same shadow size as normal cards - only color changes */
-        box-shadow: 0 1px 3px 0 rgba(59, 130, 246, 0.2), 0 1px 2px 0 rgba(59, 130, 246, 0.12);
     }
 
     .window-card.focused {

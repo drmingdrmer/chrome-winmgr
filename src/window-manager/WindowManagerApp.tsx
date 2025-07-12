@@ -97,7 +97,7 @@ export const WindowManagerApp: React.FC = () => {
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full mx-4">
+                <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
                     <div className="flex items-center gap-3 mb-4">
                         <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -123,7 +123,7 @@ export const WindowManagerApp: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Compact Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-full mx-auto px-4 py-3">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-6 min-w-0">
@@ -211,7 +211,7 @@ export const WindowManagerApp: React.FC = () => {
             {/* Main Content - Masonry Layout */}
             <main className="max-w-full mx-auto px-4 py-4">
                 {filteredWindows.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-8 text-center max-w-md mx-auto">
+                    <div className="bg-white rounded-lg p-8 text-center max-w-md mx-auto">
                         {searchText ? (
                             <>
                                 <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
