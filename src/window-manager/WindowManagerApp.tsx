@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useWindowsData } from '../hooks/useWindowsData';
+import { usePerformanceOptimizedSearch } from '../hooks/usePerformanceOptimizedSearch';
 import { WindowGroup } from '../components/WindowGroup';
 
 const STORAGE_KEY = 'chrome-winmgr-layout-mode';
@@ -7,6 +8,7 @@ const OLD_STORAGE_KEY = 'chrome-winmgr-column-count';
 
 export const WindowManagerApp: React.FC = () => {
     const { windows, loading, error, refreshData } = useWindowsData();
+    const rafRef = useRef<number>();
 
     // Layout modes: compact/medium/large for size-based, or 1-6 for fixed columns
     const [layoutMode, setLayoutMode] = useState<string>(() => {
@@ -40,13 +42,28 @@ export const WindowManagerApp: React.FC = () => {
     const [searchText, setSearchText] = useState<string>('');
     const [debouncedSearchText, setDebouncedSearchText] = useState<string>('');
 
-    // Debounce search text to reduce expensive filtering operations
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedSearchText(searchText);
-        }, 150); // 150ms debounce
+    // Use the optimized search hook
+    const { filteredWindows } = usePerformanceOptimizedSearch(windows, debouncedSearchText);
 
-        return () => clearTimeout(timer);
+    // Optimized debounce with requestAnimationFrame
+    useEffect(() => {
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+        }
+
+        rafRef.current = requestAnimationFrame(() => {
+            const timer = setTimeout(() => {
+                setDebouncedSearchText(searchText);
+            }, 150); // 150ms debounce
+
+            return () => clearTimeout(timer);
+        });
+
+        return () => {
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
+        };
     }, [searchText]);
 
     // Save layout mode to localStorage whenever it changes
@@ -76,44 +93,21 @@ export const WindowManagerApp: React.FC = () => {
         }
     }, [layoutMode]);
 
-    // Filter windows and tabs based on debounced search text for better performance
-    const filteredWindows = useMemo(() => {
-        if (!debouncedSearchText.trim()) {
-            return windows;
-        }
+    // Memoize tab counts with more efficient calculation
+    const tabCounts = useMemo(() => {
+        let totalTabs = 0;
+        let filteredTotalTabs = 0;
 
-        const searchLower = debouncedSearchText.toLowerCase();
+        windows.forEach(window => {
+            totalTabs += window.tabs.length;
+        });
 
-        return windows.map(window => {
-            // Filter tabs that match the search
-            const filteredTabs = window.tabs.filter(tab => {
-                const titleMatch = tab.title?.toLowerCase().includes(searchLower);
-                const urlMatch = tab.url?.toLowerCase().includes(searchLower);
-                return titleMatch || urlMatch;
-            });
+        filteredWindows.forEach(window => {
+            filteredTotalTabs += window.tabs.length;
+        });
 
-            // Include window if it has matching tabs or if window title matches
-            if (filteredTabs.length > 0) {
-                return {
-                    ...window,
-                    tabs: filteredTabs
-                };
-            }
-
-            return null;
-        }).filter(Boolean) as typeof windows;
-    }, [windows, debouncedSearchText]);
-
-    // Memoize tab counts
-    const totalTabs = useMemo(() =>
-        windows.reduce((sum, window) => sum + window.tabs.length, 0),
-        [windows]
-    );
-
-    const filteredTotalTabs = useMemo(() =>
-        filteredWindows.reduce((sum, window) => sum + window.tabs.length, 0),
-        [filteredWindows]
-    );
+        return { totalTabs, filteredTotalTabs };
+    }, [windows, filteredWindows]);
 
     // Memoize event handlers
     const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +121,36 @@ export const WindowManagerApp: React.FC = () => {
     const handleLayoutModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setLayoutMode(e.target.value);
     }, []);
+
+    // Memoize static elements to avoid re-creation
+    const staticIcons = useMemo(() => ({
+        windows: (
+            <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+            </svg>
+        ),
+        tabs: (
+            <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2.5 5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45.5a2.5 2.5 0 11-3.9-3 2.5 2.5 0 013.9 3z" clipRule="evenodd" />
+            </svg>
+        ),
+        search: (
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        ),
+        close: (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+        ),
+        layout: (
+            <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
+            </svg>
+        )
+    }), []);
 
     if (error) {
         return (
@@ -160,9 +184,7 @@ export const WindowManagerApp: React.FC = () => {
                             <h1 className="text-xl font-bold text-gray-900 whitespace-nowrap">Chrome Window Manager</h1>
                             <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center gap-1">
-                                    <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-                                    </svg>
+                                    {staticIcons.windows}
                                     <span className="font-medium text-gray-700">
                                         {debouncedSearchText ? filteredWindows.length : windows.length}
                                         {debouncedSearchText && filteredWindows.length !== windows.length && (
@@ -172,14 +194,11 @@ export const WindowManagerApp: React.FC = () => {
                                     <span className="text-gray-500">windows</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                                        <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm2.5 5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45.5a2.5 2.5 0 11-3.9-3 2.5 2.5 0 013.9 3z" clipRule="evenodd" />
-                                    </svg>
+                                    {staticIcons.tabs}
                                     <span className="font-medium text-gray-700">
-                                        {debouncedSearchText ? filteredTotalTabs : totalTabs}
-                                        {debouncedSearchText && filteredTotalTabs !== totalTabs && (
-                                            <span className="text-gray-400">/{totalTabs}</span>
+                                        {debouncedSearchText ? tabCounts.filteredTotalTabs : tabCounts.totalTabs}
+                                        {debouncedSearchText && tabCounts.filteredTotalTabs !== tabCounts.totalTabs && (
+                                            <span className="text-gray-400">/{tabCounts.totalTabs}</span>
                                         )}
                                     </span>
                                     <span className="text-gray-500">tabs</span>
@@ -190,9 +209,7 @@ export const WindowManagerApp: React.FC = () => {
                         {/* Search Bar */}
                         <div className="flex items-center gap-2 flex-1 max-w-md">
                             <div className="relative flex-1">
-                                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
+                                {staticIcons.search}
                                 <input
                                     type="text"
                                     placeholder="Search tabs and windows..."
@@ -205,9 +222,7 @@ export const WindowManagerApp: React.FC = () => {
                                         onClick={handleClearSearch}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                     >
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
+                                        {staticIcons.close}
                                     </button>
                                 )}
                             </div>
@@ -215,9 +230,7 @@ export const WindowManagerApp: React.FC = () => {
 
                         {/* Layout Mode Selector */}
                         <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
-                            </svg>
+                            {staticIcons.layout}
                             <select
                                 value={layoutMode}
                                 onChange={handleLayoutModeChange}
