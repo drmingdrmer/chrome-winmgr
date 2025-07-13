@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useWindowsData } from '../hooks/useWindowsData';
 import { usePerformanceOptimizedSearch } from '../hooks/usePerformanceOptimizedSearch';
 import { WindowGroup } from '../components/WindowGroup';
+import { TabWindowChangeMessage } from '../types';
 
 const STORAGE_KEY = 'chrome-winmgr-layout-mode';
 const OLD_STORAGE_KEY = 'chrome-winmgr-column-count';
@@ -74,6 +75,37 @@ export const WindowManagerApp: React.FC = () => {
             // Silently fail if localStorage is not available
         }
     }, [layoutMode]);
+
+    // Listen for tab/window changes from background script
+    useEffect(() => {
+        const handleMessage = (message: TabWindowChangeMessage) => {
+            if (message.type === 'TAB_WINDOW_CHANGE') {
+                // Debounce the refresh to avoid excessive calls
+                if (rafRef.current) {
+                    cancelAnimationFrame(rafRef.current);
+                }
+                
+                rafRef.current = requestAnimationFrame(() => {
+                    const timer = setTimeout(() => {
+                        refreshData();
+                    }, 100); // Small delay to allow Chrome to complete the operation
+                    
+                    return () => clearTimeout(timer);
+                });
+            }
+        };
+
+        // Add message listener
+        chrome.runtime.onMessage.addListener(handleMessage);
+
+        // Cleanup on unmount
+        return () => {
+            chrome.runtime.onMessage.removeListener(handleMessage);
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
+        };
+    }, [refreshData]);
 
     // Memoize layout configuration
     const layoutConfig = useMemo(() => {
