@@ -31,10 +31,18 @@ const highlightText = (text: string, searchText: string) => {
 // Favicon cache to avoid duplicate requests
 const faviconCache = new Map<string, string>();
 
+// Debug: Add a console log to confirm the updated component is loaded
+console.log('[TabItem] Component loaded with simple URL tooltip - v2.0');
+
 export const TabItem: React.FC<TabItemProps> = React.memo(({ tab, onTabChange, compact = false, searchText = '' }) => {
     const elementRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [faviconLoaded, setFaviconLoaded] = useState(false);
+
+    // Debug: Log when component mounts
+    useEffect(() => {
+        console.log('[TabItem] Component mounted for tab:', tab.title, 'URL:', tab.url);
+    }, []);
 
     // Intersection Observer for lazy loading
     useEffect(() => {
@@ -172,6 +180,7 @@ export const TabItem: React.FC<TabItemProps> = React.memo(({ tab, onTabChange, c
                 ref={elementRef}
                 className={`${tabItemClasses} flex items-center gap-2 p-1.5`}
                 onClick={handleTabClick}
+                title={tab.url}
             >
                 <div className="flex-shrink-0 w-3 h-3">
                     {faviconElement}
@@ -200,6 +209,7 @@ export const TabItem: React.FC<TabItemProps> = React.memo(({ tab, onTabChange, c
             ref={elementRef}
             className={`${tabItemClasses} flex items-center gap-3 p-3`}
             onClick={handleTabClick}
+            title={tab.url}
         >
             <div className="flex-shrink-0 w-4 h-4">
                 {faviconElement}
